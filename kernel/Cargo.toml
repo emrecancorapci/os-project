@@ -1,15 +1,19 @@
 [package]
-name = "basic-os"
+name = "kernel"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+test = false
+doctest = false
+bench = false
 
 [dependencies]
-log = "0.4.29"
-uefi = { version = "0.36.1", features = ["panic_handler", "logger"] }
+x86_64 = "*"
 
 [profile.dev]
 panic = "abort"
 
 [profile.release]
 panic = "abort"
+

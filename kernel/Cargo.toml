@@ -4,16 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [[bin]]
+name = "kernel"
 test = false
 doctest = false
 bench = false
-
-[dependencies]
-x86_64 = "*"
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
-

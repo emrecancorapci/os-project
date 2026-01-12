@@ -1,12 +1,8 @@
-# UEFI Hello World
-
-A minimal UEFI application written in Rust that displays "Hello world!" and demonstrates basic UEFI boot capabilities.
-
-I aim to create a basic educational OS.
+# EmOS - Educational OS
 
 ## Overview
 
-This project creates a bare-metal UEFI application that runs directly on UEFI firmware without an operating system. It uses the `uefi` crate to interface with UEFI services and demonstrates:
+This project is an educational OS that runs directly on UEFI firmware without an operating system. It uses the `uefi` crate to interface with UEFI services and demonstrates:
 
 - Building a `no_std` Rust application
 - UEFI entry point configuration
@@ -17,11 +13,14 @@ This project creates a bare-metal UEFI application that runs directly on UEFI fi
 
 ### Required Software
 
-1. **Rust Toolchain**
+1. **Just** (Optional)
+   - Install Just via [just](https://just.systems/)
+
+2. **Rust Toolchain**
    - Install Rust via [rustup](https://rustup.rs/)
    - The project will automatically configure the required targets via `rust-toolchain.toml`
 
-2. **QEMU**
+3. **QEMU**
    - Install QEMU for x86_64 emulation:
 
    ```bash
@@ -35,7 +34,7 @@ This project creates a bare-metal UEFI application that runs directly on UEFI fi
    sudo dnf install qemu-system-x86
    ```
 
-3. **OVMF Firmware**
+4. **OVMF Firmware**
    - Download OVMF (Open Virtual Machine Firmware) files:
 
    ```bash
@@ -51,11 +50,12 @@ This project creates a bare-metal UEFI application that runs directly on UEFI fi
 
 ## Project Setup
 
-### 1. Install Rust Targets
+### 1. Install Rust Targets and Nightly Channel
 
 The required UEFI targets are specified in `rust-toolchain.toml` and will be installed automatically. If needed, you can manually install them:
 
 ```bash
+rustup override set nightly
 rustup target add x86_64-unknown-uefi
 rustup target add aarch64-unknown-uefi
 rustup target add i686-unknown-uefi
@@ -97,26 +97,12 @@ mkdir -p esp/efi/boot
 
 ## Building and Running
 
-### Build the Project
-
-This compiles the Rust code to a UEFI executable (`.efi` file). `run.sh` already does this for you.
-
-```bash
-cargo build --target x86_64-unknown-uefi
-```
-
-### Run with QEMU
-
-The easiest way to run the application is using the provided script:
-
-```bash
-bash run.sh
-```
+`just build` already builds the kernel and the loader for you. You can run it with `just run`.
 
 This script will:
 
-1. Build the UEFI application
-2. Copy the built `.efi` file to the ESP directory as `bootx64.efi`
+1. Build the UEFI and kernel application
+2. Copy the built `.efi` and kernel files to the ESP directory.
 3. Launch QEMU with OVMF firmware and the ESP mounted as a FAT filesystem
 
 ### Manual Execution
@@ -128,33 +114,16 @@ You can also run the steps manually:
 mkdir -p esp/efi/boot
 
 # Build
-cargo build --target x86_64-unknown-uefi
+cargo build -p kernel --release --target x86_64-unknown-none
+cargo build -p loader --release --target x86_64-unknown-uefi
 
 # Copy to ESP
-cp target/x86_64-unknown-uefi/debug/uefi-hello.efi esp/efi/boot/bootx64.efi
+cp target/x86_64-unknown-none/release/kernel.bin esp/kernel.bin
+cp target/x86_64-unknown-uefi/release/loader.efi esp/efi/boot/bootx64.efi
 
 # Run in QEMU
-qemu-system-x86_64 -enable-kvm \
-  -drive if=pflash,format=raw,readonly=on,file=ovmf/OVMF_CODE.fd \
-  -drive if=pflash,format=raw,readonly=on,file=ovmf/OVMF_VARS.fd \
-  -drive format=raw,file=fat:rw:esp
+qemu-system-x86_64 -enable-kvm -serial stdio \
+         -drive if=pflash,format=raw,readonly=on,file=ovmf/OVMF_CODE.fd \
+         -drive if=pflash,format=raw,readonly=on,file=ovmf/OVMF_VARS.fd \
+         -drive format=raw,file=fat:rw:esp
 ```
-
-## Troubleshooting
-
-### QEMU fails to start
-
-- Ensure OVMF files are correctly copied to the `ovmf/` directory
-- Verify QEMU is installed: `qemu-system-x86_64 --version`
-- Check that KVM is available (or remove `-enable-kvm` flag on non-Linux systems)
-
-### Build errors
-
-- Ensure the correct Rust target is installed: `rustup target list --installed`
-- Try cleaning the build: `cargo clean && cargo build --target x86_64-unknown-uefi`
-
-### "Hello world!" doesn't appear
-
-- The message appears in the QEMU console window
-- The application waits for 10 seconds before exiting
-- Check QEMU's serial output or graphical console
